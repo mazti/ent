@@ -14,6 +14,12 @@ const (
 	// FieldName holds the string denoting the name vertex property in the database.
 	FieldName = "name"
 
+	// EdgeTeam holds the string denoting the edge name in the schema.
+	EdgeTeam = "team"
+
+	// EdgeOwner holds the string denoting the edge name in the schema.
+	EdgeOwner = "owner"
+
 	// Table holds the table name of the pet in the database.
 	Table = "pets"
 	// TeamTable is the table the holds the team relation/edge.

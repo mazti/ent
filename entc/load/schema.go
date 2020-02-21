@@ -21,13 +21,14 @@ type Schema struct {
 	Edges   []*Edge    `json:"edges,omitempty"`
 	Fields  []*Field   `json:"fields,omitempty"`
 	Indexes []*Index   `json:"indexes,omitempty"`
+	Hooks   int        `json:"hooks,omitempty"`
 }
 
 // Position describes a field position in the schema.
 type Position struct {
-	Index      int  // field index in the field list.
-	MixedIn    bool // indicates if the field was mixed-in.
-	MixinIndex int  // mixin index in the mixin list.
+	Index      int  // Field index in the field list.
+	MixedIn    bool // Indicates if the field was mixed-in.
+	MixinIndex int  // Mixin index in the mixin list.
 }
 
 // Field represents an ent.Field that was loaded from a complied user package.
@@ -132,7 +133,7 @@ func MarshalSchema(schema ent.Interface) (b []byte, err error) {
 		Name:   indirect(reflect.TypeOf(schema)).Name(),
 	}
 	if err := s.loadFields(schema); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("schema %q: %v", s.Name, err)
 	}
 	edges, err := safeEdges(schema)
 	if err != nil {
@@ -154,6 +155,9 @@ func MarshalSchema(schema ent.Interface) (b []byte, err error) {
 			StorageKey: idx.StorageKey,
 		})
 	}
+	if err := s.loadHooks(schema); err != nil {
+		return nil, fmt.Errorf("schema %q: %v", s.Name, err)
+	}
 	return json.Marshal(s)
 }
 
@@ -161,17 +165,17 @@ func MarshalSchema(schema ent.Interface) (b []byte, err error) {
 func (s *Schema) loadFields(schema ent.Interface) error {
 	mixin, err := safeMixin(schema)
 	if err != nil {
-		return fmt.Errorf("schema %q: %v", s.Name, err)
+		return err
 	}
 	for i, mx := range mixin {
 		fields, err := safeFields(mx)
 		if err != nil {
-			return fmt.Errorf("schema %q: %v", s.Name, err)
+			return err
 		}
 		for j, f := range fields {
 			sf, err := NewField(f.Descriptor())
 			if err != nil {
-				return fmt.Errorf("schema %q: %v", s.Name, err)
+				return err
 			}
 			sf.Position = &Position{
 				Index:      j,
@@ -183,16 +187,25 @@ func (s *Schema) loadFields(schema ent.Interface) error {
 	}
 	fields, err := safeFields(schema)
 	if err != nil {
-		return fmt.Errorf("schema %q: %v", s.Name, err)
+		return err
 	}
 	for i, f := range fields {
 		sf, err := NewField(f.Descriptor())
 		if err != nil {
-			return fmt.Errorf("schema %q: %v", s.Name, err)
+			return err
 		}
 		sf.Position = &Position{Index: i}
 		s.Fields = append(s.Fields, sf)
 	}
+	return nil
+}
+
+func (s *Schema) loadHooks(schema ent.Interface) error {
+	hooks, err := safeHooks(schema)
+	if err != nil {
+		return err
+	}
+	s.Hooks = len(hooks)
 	return nil
 }
 
@@ -238,6 +251,17 @@ func safeMixin(schema ent.Interface) (mixin []ent.Mixin, err error) {
 		}
 	}()
 	return schema.Mixin(), nil
+}
+
+// safeHooks wraps the schema.Hooks method with recover to ensure no panics in marshaling.
+func safeHooks(schema ent.Interface) (hooks []ent.Hook, err error) {
+	defer func() {
+		if v := recover(); v != nil {
+			err = fmt.Errorf("schema.Hooks panics: %v", v)
+			hooks = nil
+		}
+	}()
+	return schema.Hooks(), nil
 }
 
 func indirect(t reflect.Type) reflect.Type {

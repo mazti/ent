@@ -7,6 +7,7 @@
 package ent
 
 import (
+	"github.com/facebookincubator/ent"
 	"github.com/facebookincubator/ent/dialect"
 )
 
@@ -21,6 +22,8 @@ type config struct {
 	debug bool
 	// log used for logging on debug mode.
 	log func(...interface{})
+	// hooks to execute on mutations.
+	hooks []ent.Hook
 }
 
 // Options applies the options on the config object.
@@ -51,5 +54,12 @@ func Log(fn func(...interface{})) Option {
 func Driver(driver dialect.Driver) Option {
 	return func(c *config) {
 		c.driver = driver
+	}
+}
+
+// Hooks sets mutations hooks.
+func Hooks(hooks ...ent.Hook) Option {
+	return func(c *config) {
+		c.hooks = append(c.hooks, hooks...)
 	}
 }

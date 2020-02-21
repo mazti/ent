@@ -125,14 +125,21 @@ func New{{ $client }}(c config) *{{ $client }} {
 	return &{{ $client }}{config: c}
 }
 
+// WithHooks appends hooks to the given client.
+func (c *{{ $client }}) WithHooks(hooks ...ent.Hook) {
+	c.hooks = append(c.hooks, hooks...)
+}
+
 // Create returns a create builder for {{ $n.Name }}.
 func (c *{{ $client }}) Create() *{{ $n.Name }}Create {
-	return &{{ $n.Name }}Create{config: c.config}
+	mutation := new{{ $n.MutationName }}(OpCreate)
+	return &{{ $n.Name }}Create{config: c.config, hooks: c.hooks, mutation: mutation}
 }
 
 // Update returns an update builder for {{ $n.Name }}.
 func (c *{{ $client }}) Update() *{{ $n.Name }}Update {
-	return &{{ $n.Name }}Update{config: c.config}
+	mutation := new{{ $n.MutationName }}(OpUpdate)
+	return &{{ $n.Name }}Update{config: c.config, hooks: c.hooks, mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
@@ -142,12 +149,15 @@ func (c *{{ $client }}) UpdateOne({{ $rec }} *{{ $n.Name }}) *{{ $n.Name }}Updat
 
 // UpdateOneID returns an update builder for the given id.
 func (c *{{ $client }}) UpdateOneID(id {{ $n.ID.Type }}) *{{ $n.Name }}UpdateOne {
-	return &{{ $n.Name }}UpdateOne{config: c.config, id: id}
+	mutation := new{{ $n.MutationName }}(OpUpdateOne)
+	mutation.id = &id
+	return &{{ $n.Name }}UpdateOne{config: c.config, hooks: c.hooks, mutation: mutation}
 }
 
 // Delete returns a delete builder for {{ $n.Name }}.
 func (c *{{ $client }}) Delete() *{{ $n.Name }}Delete {
-	return &{{ $n.Name }}Delete{config: c.config}
+	mutation := new{{ $n.MutationName }}(OpDelete)
+	return &{{ $n.Name }}Delete{config: c.config, hooks: c.hooks, mutation: mutation}
 }
 
 // DeleteOne returns a delete builder for the given entity.
@@ -157,7 +167,10 @@ func (c *{{ $client }}) DeleteOne({{ $rec }} *{{ $n.Name }}) *{{ $n.Name }}Delet
 
 // DeleteOneID returns a delete builder for the given id.
 func (c *{{ $client }}) DeleteOneID(id {{ $n.ID.Type }}) *{{ $n.Name }}DeleteOne {
-	return &{{ $n.Name }}DeleteOne{c.Delete().Where({{ $n.Package }}.ID(id))}
+	builder := c.Delete().Where({{ $n.Package }}.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &{{ $n.Name }}DeleteOne{builder}
 }
 
 // Create returns a query builder for {{ $n.Name }}.

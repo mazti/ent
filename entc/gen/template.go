@@ -91,6 +91,10 @@ var (
 			Format: "config.go",
 		},
 		{
+			Name:   "mutation",
+			Format: "mutation.go",
+		},
+		{
 			Name:   "migrate",
 			Format: "migrate/migrate.go",
 			Skip:   func(g *Graph) bool { return !g.SupportMigrate() },
@@ -103,6 +107,30 @@ var (
 		{
 			Name:   "predicate",
 			Format: "predicate/predicate.go",
+		},
+		{
+			Name:   "runtime",
+			Format: "runtime/runtime.go",
+			Skip: func(g *Graph) bool {
+				for _, n := range g.Nodes {
+					if n.NumHooks() > 0 && (n.HasDefault() || n.HasValidators()) {
+						return false
+					}
+				}
+				return true
+			},
+		},
+		{
+			Name:   "runtime",
+			Format: "runtime.go",
+			Skip: func(g *Graph) bool {
+				for _, n := range g.Nodes {
+					if n.NumHooks() == 0 && (n.HasDefault() || n.HasValidators()) {
+						return false
+					}
+				}
+				return true
+			},
 		},
 	}
 	// templates holds the Go templates for the code generation.

@@ -14,6 +14,12 @@ const (
 	// FieldValue holds the string denoting the value vertex property in the database.
 	FieldValue = "value"
 
+	// EdgePrev holds the string denoting the edge name in the schema.
+	EdgePrev = "prev"
+
+	// EdgeNext holds the string denoting the edge name in the schema.
+	EdgeNext = "next"
+
 	// Table holds the table name of the node in the database.
 	Table = "nodes"
 	// PrevTable is the table the holds the prev relation/edge.

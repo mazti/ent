@@ -14,6 +14,9 @@ const (
 	// FieldName holds the string denoting the name vertex property in the database.
 	FieldName = "name"
 
+	// EdgeFiles holds the string denoting the edge name in the schema.
+	EdgeFiles = "files"
+
 	// Table holds the table name of the filetype in the database.
 	Table = "file_types"
 	// FilesTable is the table the holds the files relation/edge.

@@ -6,10 +6,6 @@
 
 package file
 
-import (
-	"github.com/facebookincubator/ent/entc/integration/ent/schema"
-)
-
 const (
 	// Label holds the string label denoting the file type in the database.
 	Label = "file"
@@ -23,6 +19,12 @@ const (
 	FieldUser = "user"
 	// FieldGroup holds the string denoting the group vertex property in the database.
 	FieldGroup = "group"
+
+	// EdgeOwner holds the string denoting the edge name in the schema.
+	EdgeOwner = "owner"
+
+	// EdgeType holds the string denoting the edge name in the schema.
+	EdgeType = "type"
 
 	// Table holds the table name of the file in the database.
 	Table = "files"
@@ -58,13 +60,11 @@ var ForeignKeys = []string{
 	"user_files",
 }
 
+// Note that the variables below are initialized by by the `ent`
+// package in the initialization of the application (using `init`).
 var (
-	fields = schema.File{}.Fields()
-
-	// descSize is the schema descriptor for size field.
-	descSize = fields[0].Descriptor()
 	// DefaultSize holds the default value on creation for the size field.
-	DefaultSize = descSize.Default.(int)
+	DefaultSize int
 	// SizeValidator is a validator for the "size" field. It is called by the builders before save.
-	SizeValidator = descSize.Validators[0].(func(int) error)
+	SizeValidator func(int) error
 )

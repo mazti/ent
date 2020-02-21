@@ -7,10 +7,13 @@ package gen
 import (
 	"fmt"
 	"go/token"
+	"path"
 	"reflect"
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/facebookincubator/ent"
 
 	"github.com/facebookincubator/ent/dialect/sql/schema"
 	"github.com/facebookincubator/ent/entc/load"
@@ -270,6 +273,16 @@ func (t Type) HasOptional() bool {
 	return false
 }
 
+// HasNumeric reports if this type has a numeric field.
+func (t Type) HasNumeric() bool {
+	for _, f := range t.Fields {
+		if f.Type.Numeric() {
+			return true
+		}
+	}
+	return false
+}
+
 // FKEdges returns all edges that reside on the type table as foreign-keys.
 func (t Type) FKEdges() (edges []*Edge) {
 	for _, e := range t.Edges {
@@ -452,6 +465,35 @@ func (t Type) QueryName() string {
 	return pascal(t.Name) + "Query"
 }
 
+// MutationName returns the struct name of the mutation builder for this type.
+func (t Type) MutationName() string {
+	return pascal(t.Name) + "Mutation"
+}
+
+// SiblingImports returns all sibling packages that are needed for the different builders.
+func (t Type) SiblingImports() []string {
+	var (
+		paths = []string{path.Join(t.Config.Package, t.Package())}
+		seen  = map[string]bool{paths[0]: true}
+	)
+	for _, e := range t.Edges {
+		name := path.Join(t.Config.Package, e.Type.Package())
+		if !seen[name] {
+			seen[name] = true
+			paths = append(paths, name)
+		}
+	}
+	return paths
+}
+
+// NumHooks returns the number of hooks declared in the type schema.
+func (t Type) NumHooks() int {
+	if t.schema != nil {
+		return t.schema.Hooks
+	}
+	return 0
+}
+
 // Constant returns the constant name of the field.
 func (f Field) Constant() string { return "Field" + pascal(f.Name) }
 
@@ -489,6 +531,27 @@ func (f Field) EnumName(enum string) string {
 
 // Validator returns the validator name.
 func (f Field) Validator() string { return pascal(f.Name) + "Validator" }
+
+// mutMethods returns the method names of mutation interface.
+var mutMethods = func() map[string]struct{} {
+	t := reflect.TypeOf(new(ent.Mutation)).Elem()
+	names := make(map[string]struct{})
+	for i := 0; i < t.NumMethod(); i++ {
+		names[t.Method(i).Name] = struct{}{}
+	}
+	return names
+}()
+
+// MutationGet returns the method name for getting the field value.
+// The default name is just a pascal format. If the the method conflicts
+// with the mutation methods, prefix the method with "Get".
+func (f Field) MutationGet() string {
+	name := pascal(f.Name)
+	if _, ok := mutMethods[name]; ok {
+		name = "Get" + name
+	}
+	return name
+}
 
 // IsTime returns true if the field is a timestamp field.
 func (f Field) IsTime() bool { return f.Type != nil && f.Type.Type == field.TypeTime }
