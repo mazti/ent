@@ -306,7 +306,7 @@ func (g *Graph) Tables() (all []*schema.Table) {
 				// "owner" is the table that owns the relations (we set the foreign-key on)
 				// and "ref" is the referenced table.
 				owner, ref := tables[e.Rel.Table], tables[n.Table()]
-				column := &schema.Column{Name: e.Rel.Column(), Type: field.TypeInt, Unique: e.Rel.Type == O2O, Nullable: true}
+				column := &schema.Column{Name: e.Rel.Column(), Type: ref.PrimaryKey[0].Type, Unique: e.Rel.Type == O2O, Nullable: true}
 				owner.AddColumn(column)
 				owner.AddForeignKey(&schema.ForeignKey{
 					RefTable:   ref,
@@ -317,7 +317,7 @@ func (g *Graph) Tables() (all []*schema.Table) {
 				})
 			case M2O:
 				ref, owner := tables[e.Type.Table()], tables[e.Rel.Table]
-				column := &schema.Column{Name: e.Rel.Column(), Type: field.TypeInt, Nullable: true}
+				column := &schema.Column{Name: e.Rel.Column(), Type: ref.PrimaryKey[0].Type, Nullable: true}
 				owner.AddColumn(column)
 				owner.AddForeignKey(&schema.ForeignKey{
 					RefTable:   ref,
@@ -328,11 +328,11 @@ func (g *Graph) Tables() (all []*schema.Table) {
 				})
 			case M2M:
 				t1, t2 := tables[n.Table()], tables[e.Type.Table()]
-				c1 := &schema.Column{Name: e.Rel.Columns[0], Type: field.TypeInt}
+				c1 := &schema.Column{Name: e.Rel.Columns[0], Type: t1.PrimaryKey[0].Type}
 				if ref := n.ID; ref.UserDefined {
 					c1.Type = ref.Type.Type
 				}
-				c2 := &schema.Column{Name: e.Rel.Columns[1], Type: field.TypeInt}
+				c2 := &schema.Column{Name: e.Rel.Columns[1], Type: t2.PrimaryKey[0].Type}
 				if ref := e.Type.ID; ref.UserDefined {
 					c2.Type = ref.Type.Type
 				}
